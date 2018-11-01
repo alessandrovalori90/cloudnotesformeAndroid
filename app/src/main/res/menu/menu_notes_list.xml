@@ -2,6 +2,6 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
 
     <item
-        android:id="@+id/log_out"
-        android:title="Loug out" />
+    android:id="@+id/log_out"
+    android:title="Loug out" />
 </menu>

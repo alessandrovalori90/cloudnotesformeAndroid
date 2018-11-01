@@ -1,4 +1,4 @@
-package it.sapienza.simplenotes;
+package it.sapienza.simplenotes.model;
 
 import java.util.Date;
 
@@ -6,13 +6,15 @@ public class Note implements Comparable<Note> {
     private String title;
     private String text;
     private Date date;
-    private int ID;
+    private int id;
+    private String user_id;
 
-    Note(String title, String text, Date date, int ID){
+    public Note(String title, String text, Date date, int id, String user_id){
         this.title = title;
         this.text = text;
         this.date = date;
-        this.ID = ID;
+        this.id = id;
+        this.user_id = user_id;
     }
 
     public String getTitle() {
@@ -39,7 +41,11 @@ public class Note implements Comparable<Note> {
         this.date = date;
     }
 
-    public int getID() { return ID; }
+    public int getId() { return id; }
+
+    public String getUser_id() { return user_id; }
+
+    public void setUser_id(String user_id) { this.user_id = user_id; }
 
     @Override
     public int compareTo(Note n) {

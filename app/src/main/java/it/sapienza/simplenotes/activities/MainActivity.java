@@ -1,57 +1,64 @@
-package it.sapienza.simplenotes;
+package it.sapienza.simplenotes.activities;
+
 
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
-import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 
 import com.facebook.AccessToken;
 import com.facebook.login.LoginManager;
 
-import androidx.work.WorkManager;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+
+import it.sapienza.simplenotes.GlobalClass;
+import it.sapienza.simplenotes.R;
+import it.sapienza.simplenotes.Runnables.DownloadNotesRunnable;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
-    private WorkManager mWorkManager;
     private RecyclerView recycler;
     private GlobalClass global;
+    private Executor executor;
+    private AccessToken facebooktoken;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_notes_list);
+        //set Toolbar
         Toolbar toolbar = findViewById(R.id.toolbar);
         toolbar.setTitle("Simple Notes");
-        //show menu
         setSupportActionBar(toolbar);
-
+        //set Floating button
         FloatingActionButton newNote = findViewById(R.id.newNote);
         newNote.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Intent newIntent = new Intent(MainActivity.this, NoteActivity.class);
-                newIntent.putExtra("new",true); //true for new notes false for old notes
                 startActivity(newIntent);
             }
         });
+
         global = (GlobalClass) getApplicationContext();
         recycler = findViewById(R.id.recycler);
-        DownloadNotesRunnable runnable = new DownloadNotesRunnable(recycler, this, global);
-        new Thread(runnable).start();
+        //Dowload notes from server
+        executor = Executors.newSingleThreadExecutor();
+        facebooktoken = AccessToken.getCurrentAccessToken();
+        DownloadNotesRunnable runnable = new DownloadNotesRunnable(recycler, this, global,facebooktoken.getUserId());
+        executor.execute(runnable);
 
-        //mWorkManager.enqueue(OneTimeWorkRequest.from(CloudSaveRunnable.class));
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_notes_list, menu);
         return true;
@@ -67,7 +74,7 @@ public class MainActivity extends AppCompatActivity {
         //noinspection SimplifiableIfStatement
         if (id == R.id.log_out) {
             LoginManager.getInstance().logOut();
-            Intent newIntent = new Intent(MainActivity.this, Facebook.class);
+            Intent newIntent = new Intent(MainActivity.this, FacebookActivity.class);
             startActivity(newIntent);
             return true;
         }
@@ -91,9 +98,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         Log.d(TAG, "onResume: Resumed!");
-
-        RecyclerViewAdapter recycleAdapter = new RecyclerViewAdapter(global.getList());
-        recycler.setAdapter(recycleAdapter);
-        recycler.setLayoutManager(new LinearLayoutManager(this));
+        DownloadNotesRunnable runnable = new DownloadNotesRunnable(recycler, this, global,facebooktoken.getUserId());
+        executor.execute(runnable);
     }
 }

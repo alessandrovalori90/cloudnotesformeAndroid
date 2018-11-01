@@ -1,28 +1,35 @@
 package it.sapienza.simplenotes;
 
 import android.content.Context;
+import android.content.Intent;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import java.util.List;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+
+import it.sapienza.simplenotes.activities.NoteActivity;
+import it.sapienza.simplenotes.model.Note;
 
 public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapter.MyViewHolder>{
     private static final String TAG = "RecyclerViewAdapter";
-    private List<Note> list;
-    final private int CUT_SIZE=50;
+    private Note[] list;
+    private final int CUT_SIZE=50;
+    private Context context;
 
-    public RecyclerViewAdapter(List<Note> list) {
+    public RecyclerViewAdapter(Note[] list) {
         this.list = list;
     }
 
     // Create new views (invoked by the layout manager)
     @Override
     public RecyclerViewAdapter.MyViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        Context context = parent.getContext();
+        context = parent.getContext();
         LayoutInflater inflater = LayoutInflater.from(context);
         // Inflate the custom layout
         View contactView = inflater.inflate(R.layout.layout_list_item, parent, false);
@@ -39,24 +46,40 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
     public void onBindViewHolder(MyViewHolder holder, int position) {
         Log.d(TAG,"RecyclerViewAdapter: position="+position);
         // Get the data model based on position
-        Note note = list.get(position);
+        final Note note = list[position];
 
         // - get element from your dataset at this position
         // - replace the contents of the view with that element
         if(note != null){
-            holder.title.setText(note.getTitle());
-            if(note.getText().length()>CUT_SIZE) holder.preview.setText(note.getText().substring(0,CUT_SIZE));
-            else holder.preview.setText(note.getText());
-            holder.date.setText(note.getDate().toString());
-
+            if(note.getTitle()!=null) holder.title.setText(note.getTitle());
+            if(note.getText()!=null) {
+                if(note.getText().length()>CUT_SIZE) holder.preview.setText(note.getText().substring(0,CUT_SIZE));
+                else holder.preview.setText(note.getText());
+            }
+            if(note.getDate()!=null) {
+                DateFormat dateFormat = new SimpleDateFormat("yy-MM-dd HH:mm:ss");
+                holder.date.setText(dateFormat.format(note.getDate()));
+            }
         }
+        //add on click listener
+        holder.layout.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent newIntent = new Intent(context, NoteActivity.class);
+                newIntent.putExtra("title",note.getTitle()); //true for new notes false for old notes
+                newIntent.putExtra("text",note.getText());
+                newIntent.putExtra("id",note.getId());
+                context.startActivity(newIntent);
+            }
+        });
 
     }
 
     // Return the size of your dataset (invoked by the layout manager)
     @Override
     public int getItemCount() {
-        return list.size();
+        if(list == null) return 0;
+        return list.length;
     }
 
     // Provide a reference to the views for each data item
@@ -66,11 +89,13 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
         public TextView title;
         public TextView preview;
         public TextView date;
+        public LinearLayout layout;
         public MyViewHolder(View itemView) {
             super(itemView);
             this.title = (TextView) itemView.findViewById(R.id.itemTitle);
             this.preview = (TextView) itemView.findViewById(R.id.itemPreview);
             this.date = (TextView) itemView.findViewById(R.id.itemDate);
+            this.layout = itemView.findViewById(R.id.itemLayout);
         }
     }
 }

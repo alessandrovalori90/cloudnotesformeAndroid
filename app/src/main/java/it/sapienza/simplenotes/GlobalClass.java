@@ -2,11 +2,12 @@ package it.sapienza.simplenotes;
 
 import android.app.Application;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+
+import it.sapienza.simplenotes.model.Note;
 
 public class GlobalClass extends Application {
     private List<Note> list;
@@ -40,7 +41,7 @@ public class GlobalClass extends Application {
         int result = 1;
         while(it.hasNext()){
             Note temp = it.next();
-            if(result < temp.getID()) result = temp.getID();
+            if(result < temp.getId()) result = temp.getId();
         }
         return result+1;
     }
