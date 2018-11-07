@@ -1,10 +1,10 @@
 package it.sapienza.simplenotes.model;
 
-public class Notes {
+public class NotesAnswer {
     private String result;
     private Note[] notes;
 
-    public Notes(String result, Note[] notes){
+    public NotesAnswer(String result, Note[] notes){
         this.result = result;
         this.notes = notes;
     }

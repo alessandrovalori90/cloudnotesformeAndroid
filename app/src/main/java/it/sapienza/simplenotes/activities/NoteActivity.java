@@ -2,6 +2,7 @@ package it.sapienza.simplenotes.activities;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.renderscript.ScriptGroup;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.text.Editable;
@@ -14,18 +15,26 @@ import android.widget.EditText;
 
 import com.facebook.AccessToken;
 import com.facebook.login.LoginManager;
+import com.google.gson.Gson;
 
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.Date;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import it.sapienza.simplenotes.GlobalClass;
 import it.sapienza.simplenotes.R;
+import it.sapienza.simplenotes.Runnables.DiskSaveRunnable;
 import it.sapienza.simplenotes.Runnables.NoteDeleteRunnable;
-import it.sapienza.simplenotes.Runnables.NoteSaveRunnable;
 import it.sapienza.simplenotes.model.Note;
+import it.sapienza.simplenotes.model.NoteAnswer;
 
 public class NoteActivity extends AppCompatActivity {
     private static final String TAG = "NoteActivity";
@@ -33,11 +42,13 @@ public class NoteActivity extends AppCompatActivity {
     private EditText text;
     private String titleExtra;
     private String textExtra;
-    private int idExtra;
+    private long idExtra;
     private GlobalClass global;
     private ExecutorService executor;
+    private Future future;
     private AccessToken accessToken;
-    private final int def = -1;
+    private boolean onDelete;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -51,47 +62,21 @@ public class NoteActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setDisplayShowHomeEnabled(true);
-
+        onDelete = false;
         accessToken = AccessToken.getCurrentAccessToken();
         executor = Executors.newSingleThreadExecutor();
+        //obtain information about the note
         titleExtra = getIntent().getStringExtra("title");
         textExtra = getIntent().getStringExtra("text");
-        idExtra =getIntent().getIntExtra("id",-1);
-
-        //retrieve UI items
+        long timeid = (int) new Date().getTime();
+        timeid = -Math.abs(timeid); //make negative
+        idExtra =getIntent().getLongExtra("id",timeid);
+        //retrieve UI items adn update
         title = findViewById(R.id.title);
         text = findViewById(R.id.text);
-        //
+        title.setText(titleExtra);
+        text.setText(textExtra);
 
-        if(idExtra!=def) {
-            title.setText(titleExtra);
-            text.setText(textExtra);
-        }
-
-        TextWatcher watcher = new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-            }
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-            }
-            public void afterTextChanged(Editable s) {
-                Log.d(TAG, "afterTextChanged: text="+text.getText().toString());
-                Note note = new Note(title.getText().toString(),text.getText().toString(),new Date(),idExtra,accessToken.getUserId());
-                NoteSaveRunnable save = new NoteSaveRunnable(note);
-                Future<Integer> future = executor.submit(save);
-                try {
-                    idExtra = future.get();
-                } catch (ExecutionException e) {
-                    e.printStackTrace();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-        };
-
-        text.addTextChangedListener(watcher);
-        title.addTextChangedListener(watcher);
     }
 
     @Override
@@ -112,11 +97,14 @@ public class NoteActivity extends AppCompatActivity {
                 Intent newIntent = new Intent(NoteActivity.this, FacebookActivity.class);
                 newIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP); //cancels this activity and launches new one
                 startActivity(newIntent);
+                finish();
                 return true;
             case R.id.delete_note:
-                if(idExtra==-1) onBackPressed();
-                Runnable delete = new NoteDeleteRunnable(idExtra);
-                executor.submit(delete);
+                if(idExtra<0) onBackPressed();
+                if(future!=null) future.cancel(true);
+                Runnable delete = new NoteDeleteRunnable(this,global,idExtra);
+                future = executor.submit(delete);
+                onDelete = true;
                 onBackPressed();
                 return true;
         }
@@ -133,6 +121,9 @@ public class NoteActivity extends AppCompatActivity {
     public void finish() {
         super.finish();
         Log.d(TAG, "finished!");
+        if(onDelete) return;
+        Note note = new Note(title.getText().toString(),text.getText().toString(),new Date(),idExtra,accessToken.getUserId());
+        global.update(note);
     }
 
     @Override

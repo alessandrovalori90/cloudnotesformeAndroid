@@ -10,43 +10,58 @@ import java.util.List;
 import it.sapienza.simplenotes.model.Note;
 
 public class GlobalClass extends Application {
-    private List<Note> list;
+    private Note[] list;
 
-    public GlobalClass() {
-        list = new LinkedList<Note>();
-    }
+    public GlobalClass() { }
 
-    public List<Note> getList() {
+    public Note[] getList() {
         return list;
     }
 
-    public boolean add(Note add){
-        boolean result = list.add(add);
-        sort();
+    public synchronized void setList(Note list[]){ this.list =list; }
+
+    public synchronized void update(Note add){
+        if(list == null){
+            Note[] tmp = new Note[1];
+            tmp[0] = add;
+            list= tmp;
+            return;
+        }
+        Note[] tmp = new Note[list.length+1];
+        for(int i=0;i<list.length;i++) {
+            if(add.getId()==list[i].getId()){
+                list[i] = add;
+                return;
+            }
+            tmp[i] = list[i];
+        }
+        tmp[list.length]=add;
+        list = tmp;
+    }
+
+    public synchronized boolean delete(Note delete){
+        if(list == null) return false;
+        boolean result = false;
+        Note[] tmp = new Note[list.length-1];
+        for(int i=0;i<list.length;i++){
+            if(list[i].equals(delete)) {
+                result = true;
+                continue;
+            } else if(i<tmp.length) tmp[i]=list[i];
+        }
         return result;
     }
 
-    public boolean addList(List<Note> add){
-        if(add.size()<1 || add == null) return false;
-        Iterator it = add.iterator();
-        boolean result;
-        while (it.hasNext()) if(list.add((Note) it.next()) == false) return false;
-        sort();
-        return true;
-    }
-    //returns first available id
-    public int obtainID(){
-        if(list == null || list.size() == 0) return 1;
-        Iterator<Note> it = list.iterator();
-        int result = 1;
-        while(it.hasNext()){
-            Note temp = it.next();
-            if(result < temp.getId()) result = temp.getId();
+    public synchronized boolean delete(long delete){
+        if(list == null) return false;
+        boolean result = false;
+        Note[] tmp = new Note[list.length-1];
+        for(int i=0;i<list.length;i++){
+            if(list[i].getId() == delete) {
+                result = true;
+                continue;
+            } else if(i<tmp.length) tmp[i]=list[i];
         }
-        return result+1;
-    }
-
-    private void sort(){
-        Collections.sort(list, Collections.reverseOrder());
+        return result;
     }
 }

@@ -1,11 +1,11 @@
 package it.sapienza.simplenotes.model;
 
-public class ServerAnswer {
+public class NoteAnswer {
     private String result;
     private String message;
-    private int id;
+    private long id;
 
-    public ServerAnswer(String result, String message, int id){
+    public NoteAnswer(String result, String message, long id){
         this.result = result;
         this.message = message;
         this.id = id;
@@ -27,7 +27,7 @@ public class ServerAnswer {
         this.result = result;
     }
 
-    public int getId() {
+    public long getId() {
         return id;
     }
 

@@ -9,14 +9,14 @@ import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
-import it.sapienza.simplenotes.model.ServerAnswer;
+import it.sapienza.simplenotes.model.NoteAnswer;
 
 public class UserSaveRunnable implements Runnable {
     private String user_id;
 
     private static final String TAG = "UserSaveRunnable";
     private final String URL="http://10.0.2.2:3000/users";
-    private ServerAnswer answer;
+    private NoteAnswer answer;
 
     public UserSaveRunnable(String user_id){
         this.user_id = user_id;

@@ -19,13 +19,18 @@ import it.sapienza.simplenotes.model.Note;
 public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapter.MyViewHolder>{
     private static final String TAG = "RecyclerViewAdapter";
     private Note[] list;
-    private final int CUT_SIZE=50;
+    private final int CUT_SIZE_TITLE=35;
+    private final int CUT_SIZE_TEXT =100;
     private Context context;
+    private GlobalClass global;
 
     public RecyclerViewAdapter(Note[] list) {
         this.list = list;
     }
 
+    public Note[] getList(){
+        return this.list;
+    }
     // Create new views (invoked by the layout manager)
     @Override
     public RecyclerViewAdapter.MyViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
@@ -51,9 +56,12 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
         // - get element from your dataset at this position
         // - replace the contents of the view with that element
         if(note != null){
-            if(note.getTitle()!=null) holder.title.setText(note.getTitle());
+            if(note.getTitle()!=null) {
+                if(note.getTitle().length()> CUT_SIZE_TITLE) holder.title.setText(note.getTitle().substring(0, CUT_SIZE_TITLE));
+                else holder.title.setText(note.getTitle());
+            }
             if(note.getText()!=null) {
-                if(note.getText().length()>CUT_SIZE) holder.preview.setText(note.getText().substring(0,CUT_SIZE));
+                if(note.getText().length()> CUT_SIZE_TEXT) holder.preview.setText(note.getText().substring(0, CUT_SIZE_TEXT));
                 else holder.preview.setText(note.getText());
             }
             if(note.getDate()!=null) {
@@ -61,12 +69,13 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
                 holder.date.setText(dateFormat.format(note.getDate()));
             }
         }
+        global = (GlobalClass) context.getApplicationContext();
         //add on click listener
         holder.layout.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Intent newIntent = new Intent(context, NoteActivity.class);
-                newIntent.putExtra("title",note.getTitle()); //true for new notes false for old notes
+                newIntent.putExtra("title",note.getTitle());
                 newIntent.putExtra("text",note.getText());
                 newIntent.putExtra("id",note.getId());
                 context.startActivity(newIntent);

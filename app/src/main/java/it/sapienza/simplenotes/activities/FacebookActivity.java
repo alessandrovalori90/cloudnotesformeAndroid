@@ -40,6 +40,7 @@ public class FacebookActivity extends AppCompatActivity {
             Intent newIntent = new Intent(FacebookActivity.this, MainActivity.class);
             newIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP); //cancels this activity and launches new one
             startActivity(newIntent);
+            finish();
         }
 
         // Callback registration
@@ -52,6 +53,7 @@ public class FacebookActivity extends AppCompatActivity {
                 Intent newIntent = new Intent(FacebookActivity.this, MainActivity.class);
                 newIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP); //cancels this activity and launches new one
                 startActivity(newIntent);
+                finish();
             }
 
             @Override

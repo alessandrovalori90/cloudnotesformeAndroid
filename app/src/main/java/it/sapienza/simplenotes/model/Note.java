@@ -6,10 +6,10 @@ public class Note implements Comparable<Note> {
     private String title;
     private String text;
     private Date date;
-    private int id;
+    private long id;
     private String user_id;
 
-    public Note(String title, String text, Date date, int id, String user_id){
+    public Note(String title, String text, Date date, long id, String user_id){
         this.title = title;
         this.text = text;
         this.date = date;
@@ -41,11 +41,15 @@ public class Note implements Comparable<Note> {
         this.date = date;
     }
 
-    public int getId() { return id; }
+    public long getId() { return id; }
 
     public String getUser_id() { return user_id; }
 
     public void setUser_id(String user_id) { this.user_id = user_id; }
+
+    public boolean equals(Note compared){
+        return this.id == compared.getId();
+    }
 
     @Override
     public int compareTo(Note n) {
