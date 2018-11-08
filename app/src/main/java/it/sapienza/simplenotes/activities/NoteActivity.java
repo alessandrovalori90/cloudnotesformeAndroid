@@ -2,11 +2,8 @@ package it.sapienza.simplenotes.activities;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.renderscript.ScriptGroup;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.text.Editable;
-import android.text.TextWatcher;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.Menu;
@@ -15,39 +12,21 @@ import android.widget.EditText;
 
 import com.facebook.AccessToken;
 import com.facebook.login.LoginManager;
-import com.google.gson.Gson;
 
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.Date;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 import it.sapienza.simplenotes.GlobalClass;
 import it.sapienza.simplenotes.R;
-import it.sapienza.simplenotes.Runnables.DiskSaveRunnable;
-import it.sapienza.simplenotes.Runnables.NoteDeleteRunnable;
 import it.sapienza.simplenotes.model.Note;
-import it.sapienza.simplenotes.model.NoteAnswer;
 
 public class NoteActivity extends AppCompatActivity {
     private static final String TAG = "NoteActivity";
     private EditText title;
     private EditText text;
-    private String titleExtra;
-    private String textExtra;
     private long idExtra;
     private GlobalClass global;
-    private ExecutorService executor;
-    private Future future;
     private AccessToken accessToken;
-    private boolean onDelete;
+    private boolean deleted = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -62,12 +41,10 @@ public class NoteActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setDisplayShowHomeEnabled(true);
-        onDelete = false;
         accessToken = AccessToken.getCurrentAccessToken();
-        executor = Executors.newSingleThreadExecutor();
         //obtain information about the note
-        titleExtra = getIntent().getStringExtra("title");
-        textExtra = getIntent().getStringExtra("text");
+        String titleExtra = getIntent().getStringExtra("title");
+        String textExtra = getIntent().getStringExtra("text");
         long timeid = (int) new Date().getTime();
         timeid = -Math.abs(timeid); //make negative
         idExtra =getIntent().getLongExtra("id",timeid);
@@ -101,10 +78,7 @@ public class NoteActivity extends AppCompatActivity {
                 return true;
             case R.id.delete_note:
                 if(idExtra<0) onBackPressed();
-                if(future!=null) future.cancel(true);
-                Runnable delete = new NoteDeleteRunnable(this,global,idExtra);
-                future = executor.submit(delete);
-                onDelete = true;
+                deleted = true;
                 onBackPressed();
                 return true;
         }
@@ -121,14 +95,44 @@ public class NoteActivity extends AppCompatActivity {
     public void finish() {
         super.finish();
         Log.d(TAG, "finished!");
-        if(onDelete) return;
+        if(deleted) {
+            UpdateRunnable delete = new UpdateRunnable("DELETE",null);
+            Thread t1 = new Thread(delete);
+            t1.start();
+            return;
+        }
         Note note = new Note(title.getText().toString(),text.getText().toString(),new Date(),idExtra,accessToken.getUserId());
-        global.update(note);
+        UpdateRunnable update = new UpdateRunnable("UPDATE",note);
+        Thread t1 = new Thread(update);
+        t1.start();
+
     }
 
     @Override
     protected void onStop() {
         super.onStop();
         Log.d(TAG, "stoppped!");
+    }
+
+    public class UpdateRunnable implements Runnable{
+        private String command;
+        private Note note;
+
+        UpdateRunnable(String c, Note n){
+            this.command = c;
+            this.note = n;
+        }
+        @Override
+        public void run() {
+            Log.d(TAG, "locked!");
+            global.lock();
+            if(command.equals("DELETE")){
+                global.deleteLater(idExtra);
+            } else if(command.equals("UPDATE")){
+                global.update(note);
+            }
+            global.unlock();
+            Log.d(TAG, "unlocked!");
+        }
     }
 }

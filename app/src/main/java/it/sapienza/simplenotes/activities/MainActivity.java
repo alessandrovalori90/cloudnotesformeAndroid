@@ -23,25 +23,29 @@ import com.google.gson.Gson;
 import java.io.IOException;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import it.sapienza.simplenotes.GlobalClass;
 import it.sapienza.simplenotes.R;
 import it.sapienza.simplenotes.RecyclerViewAdapter;
-import it.sapienza.simplenotes.Utility.HttpConn;
-import it.sapienza.simplenotes.Utility.InternalStorage;
+import it.sapienza.simplenotes.model.Note;
 import it.sapienza.simplenotes.model.NotesAnswer;
+import it.sapienza.simplenotes.utility.HttpConn;
+import it.sapienza.simplenotes.utility.InternalStorage;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
     private RecyclerView recycler;
     private GlobalClass global;
-    private Executor executor;
+    private ExecutorService executor;
     private AccessToken facebooktoken;
     private NotesAnswer answer;
     private boolean internet; //true if internet is available
     private Timer timer;
+    private Future future;
+    private boolean timerStarted = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -108,33 +112,43 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        Log.d(TAG, "onResume: Resumed!");
+        Gson gson = new Gson();
+        String tmp = gson.toJson(global.getList());
+        Log.d(TAG, "onResume: json test:"+tmp);
         RetrieveNotesRunnable runnable = new RetrieveNotesRunnable(recycler, this, global,facebooktoken.getUserId());
         stopTimer(); //per evitare di avere il timer e l'executor che lanciano lo stesso runnable contemporaneamente dato che è inutile
-        executor.execute(runnable);
+        future = executor.submit(runnable);
     }
 
     private void setTimer(final Context context){
+        if(timerStarted) return;
         Log.d(TAG, "timer set");
         if(timer==null) {
             timer = new Timer();
             TimerTask task = new TimerTask() {
                 @Override
                 public void run() {
+                    if(future != null ){
+                        future.cancel(true);
+                        global.unlock();
+                    }
                     RetrieveNotesRunnable tmp = new RetrieveNotesRunnable(recycler,context,global,facebooktoken.getUserId());
-                    executor.execute(tmp);
+                    future = executor.submit(tmp);
                 }
             };
             timer.scheduleAtFixedRate(task,0,10000);
+            timerStarted = true;
         }
     }
 
     private void stopTimer(){
+        if(timerStarted==false) return;
         Log.d(TAG, "timer stopped");
         if(timer!=null){
             timer.cancel();
             timer.purge();
             timer = null;
+            timerStarted = false;
         }
     }
 
@@ -148,7 +162,7 @@ public class MainActivity extends AppCompatActivity {
         private static final String TAG = "RetrieveNotesRunnable";
         private final String URL ="http://10.0.2.2:3000/"; //device is running on a VM so localhost is not recognized
 
-        public RetrieveNotesRunnable(RecyclerView recycler, Context context, GlobalClass global, String user_id){
+        private RetrieveNotesRunnable(RecyclerView recycler, Context context, GlobalClass global, String user_id){
             this.recycler = recycler;
             this.context = context;
             this.global = global;
@@ -157,8 +171,10 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public void run() {
-            Log.d(TAG, "run: dowload thread");
-            if(answer ==null) readDisk();
+            Gson gson = new Gson();
+            String tmp = gson.toJson(global.getList());
+            Log.d(TAG, "run: json test:"+tmp);
+            if(global.isFirst()) readDisk();
             recycler.post(new Runnable() {
                 @Override
                 public void run() {
@@ -167,21 +183,21 @@ public class MainActivity extends AppCompatActivity {
                     recycler.setLayoutManager(new LinearLayoutManager(context));
                 }
             });
-            Log.d(TAG, "run updated interface: ");
             checkConnection();
             if(internet) cloud();
-            InternalStorage.writeInternalStorage(global,context);
+            InternalStorage.writeNotesInternalStorage(global,context);
 
         }
         //checks open networks. These networks do not necessarely have internet connection.
-        public void checkConnection(){
+        private void checkConnection(){
             ConnectivityManager cm = (ConnectivityManager)context.getSystemService(Context.CONNECTIVITY_SERVICE);
             NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
             internet = activeNetwork != null && activeNetwork.isConnectedOrConnecting();
             Log.d(TAG, "checkConnection: "+internet);
         }
         //dowloads notes from cloud
-        private boolean cloud(){
+        private void cloud(){
+            global.lock();
             Gson gson = new Gson();
             String tmp = gson.toJson(global.getList());
             String json;
@@ -191,20 +207,31 @@ public class MainActivity extends AppCompatActivity {
 
 
             try {
-                answer = HttpConn.syncList(context, global,URL+"users/"+user_id,"PUT",json);
+                answer = HttpConn.syncList(context,URL+"users/"+user_id,"PUT",json);
             } catch (IOException e) {
                 e.printStackTrace();
                 internet = false;
                 setTimer(context);
-                return false;
+                global.unlock();
+                return;
             }
             //update interface
             if(answer == null) {
                 internet = false;
                 setTimer(context);
-                return false;
+                global.unlock();
+                return;
             }
+
+/*
+            if(global.isModified()) {
+                global.setModified(false);
+                global.unlock();
+                return;
+            }
+            */
             global.setList(answer.getNotes());
+
             recycler.post(new Runnable() {
                 @Override
                 public void run() {
@@ -213,25 +240,32 @@ public class MainActivity extends AppCompatActivity {
                     recycler.setLayoutManager(new LinearLayoutManager(context));
                 }
             });
+            deleteFlaggedFromInternal();
             internet = true;
             stopTimer();
-            return true;
+            global.unlock();
         }
+        /*
+        * Deletes notes flagged for delete fromt the internal storage
+         */
+        private void deleteFlaggedFromInternal(){
+            Note[] list = global.getList();
+            boolean deleted = false;
+            for(Note note:list){
+                if(note.isDelete()) {
+                    global.delete(note.getId());
+                    deleted = true;
+                }
+            }
+            if(deleted)
+                InternalStorage.readNotesInternalStorage(context);
 
-
+        }
         private void readDisk(){
-            answer = InternalStorage.readInternalStorage(context);
+            global.setFirst(false);
+            answer = InternalStorage.readNotesInternalStorage(context);
             if(answer ==null) return;
             global.setList(answer.getNotes());
-            recycler.post(new Runnable() {
-                @Override
-                public void run() {
-                    RecyclerViewAdapter recycleAdapter = new RecyclerViewAdapter(answer.getNotes());
-                    recycler.setAdapter(recycleAdapter);
-                    recycler.setLayoutManager(new LinearLayoutManager(context));
-                }
-            });
-
         }
     }
 

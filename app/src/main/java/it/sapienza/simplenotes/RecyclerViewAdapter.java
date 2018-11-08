@@ -2,6 +2,7 @@ package it.sapienza.simplenotes;
 
 import android.content.Context;
 import android.content.Intent;
+import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -19,21 +20,17 @@ import it.sapienza.simplenotes.model.Note;
 public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapter.MyViewHolder>{
     private static final String TAG = "RecyclerViewAdapter";
     private Note[] list;
-    private final int CUT_SIZE_TITLE=35;
-    private final int CUT_SIZE_TEXT =100;
     private Context context;
-    private GlobalClass global;
+
 
     public RecyclerViewAdapter(Note[] list) {
         this.list = list;
     }
 
-    public Note[] getList(){
-        return this.list;
-    }
     // Create new views (invoked by the layout manager)
+    @NonNull
     @Override
-    public RecyclerViewAdapter.MyViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+    public RecyclerViewAdapter.MyViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         context = parent.getContext();
         LayoutInflater inflater = LayoutInflater.from(context);
         // Inflate the custom layout
@@ -42,20 +39,21 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
         // create a new view
         //TextView v = (TextView) LayoutInflater.from(parent.getContext()).inflate(R.layout.layout_list_item, parent, false);
         // return new holder instance
-        MyViewHolder vh = new MyViewHolder(contactView);
-        return vh;
+        return new MyViewHolder(contactView);
     }
 
     // Replace the contents of a view (invoked by the layout manager)
     @Override
-    public void onBindViewHolder(MyViewHolder holder, int position) {
-        Log.d(TAG,"RecyclerViewAdapter: position="+position);
+    public void onBindViewHolder(@NonNull MyViewHolder holder, int position) {
+        final int CUT_SIZE_TITLE=35;
+        final int CUT_SIZE_TEXT =100;
+        Log.d(TAG,"RecyclerViewAdapter: size:"+getItemCount()+" position="+position+" actual pos: "+actualPosition(position));
         // Get the data model based on position
-        final Note note = list[position];
+        final Note note = list[actualPosition(position)];
 
         // - get element from your dataset at this position
         // - replace the contents of the view with that element
-        if(note != null){
+        if(note != null && !note.isDelete()){
             if(note.getTitle()!=null) {
                 if(note.getTitle().length()> CUT_SIZE_TITLE) holder.title.setText(note.getTitle().substring(0, CUT_SIZE_TITLE));
                 else holder.title.setText(note.getTitle());
@@ -65,16 +63,16 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
                 else holder.preview.setText(note.getText());
             }
             if(note.getDate()!=null) {
-                DateFormat dateFormat = new SimpleDateFormat("yy-MM-dd HH:mm:ss");
+                DateFormat dateFormat = new SimpleDateFormat("yy-MM-dd HH:mm:ss");//should add country detection
                 holder.date.setText(dateFormat.format(note.getDate()));
             }
         }
-        global = (GlobalClass) context.getApplicationContext();
         //add on click listener
         holder.layout.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Intent newIntent = new Intent(context, NoteActivity.class);
+                assert note != null;
                 newIntent.putExtra("title",note.getTitle());
                 newIntent.putExtra("text",note.getText());
                 newIntent.putExtra("id",note.getId());
@@ -88,22 +86,50 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
     @Override
     public int getItemCount() {
         if(list == null) return 0;
-        return list.length;
+        int count = 0;
+        for(Note note:list)
+            count = (note.isDelete())? ++count: count; //if condition respected set count to count++ else to count
+        return list.length-count;
+    }
+    /*
+    * returns the position of all the notes that are not deleted.
+    * if we have |deleted|good|good|
+    * with pos zero returns 1
+    * with pos 1 returns 2
+    * pos 2 is not called because size is resized in getItemCount
+    * basically substitutes the deleted items with the non deleted to make these notes invisible to the user
+     */
+
+    private int actualPosition(int pos){
+        int b=0;
+        for(int i=0; i<pos;i++){
+            if(list[i].isDelete()) ++b;
+        }
+
+        int count=0;
+        for(int i=pos; i<list.length;i++){
+            if(!list[i].isDelete()){
+                if(count<b) ++count;
+                else return i;
+            }
+        }
+
+        return 0;
     }
 
     // Provide a reference to the views for each data item
     // Complex data items may need more than one view per item, and
     // you provide access to all the views for a data item in a view holder
     public static class MyViewHolder extends RecyclerView.ViewHolder {
-        public TextView title;
-        public TextView preview;
-        public TextView date;
-        public LinearLayout layout;
-        public MyViewHolder(View itemView) {
+        private TextView title;
+        private TextView preview;
+        private TextView date;
+        private LinearLayout layout;
+        private MyViewHolder(View itemView) {
             super(itemView);
-            this.title = (TextView) itemView.findViewById(R.id.itemTitle);
-            this.preview = (TextView) itemView.findViewById(R.id.itemPreview);
-            this.date = (TextView) itemView.findViewById(R.id.itemDate);
+            this.title = itemView.findViewById(R.id.itemTitle);
+            this.preview = itemView.findViewById(R.id.itemPreview);
+            this.date =  itemView.findViewById(R.id.itemDate);
             this.layout = itemView.findViewById(R.id.itemLayout);
         }
     }

@@ -3,6 +3,7 @@
     <string name="action_settings">Settings</string>
     <string name="facebook_app_id">339285380168652</string>
     <string name="fb_login_protocol_scheme">fb339285380168652</string>
-    <string name="storage_file_name">data</string>
-    <integer name="timeout">5000</integer>
+    <string name="storage_notes_file_name">notes</string>
+    <string name="storage_settings_file_name">settings</string>
+    <integer name="timeout">3000</integer>
 </resources>

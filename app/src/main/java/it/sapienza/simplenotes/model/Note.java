@@ -8,6 +8,7 @@ public class Note implements Comparable<Note> {
     private Date date;
     private long id;
     private String user_id;
+    private boolean delete = false;
 
     public Note(String title, String text, Date date, long id, String user_id){
         this.title = title;
@@ -18,6 +19,7 @@ public class Note implements Comparable<Note> {
     }
 
     public String getTitle() {
+        if(title==null) return "";
         return title;
     }
 
@@ -26,6 +28,7 @@ public class Note implements Comparable<Note> {
     }
 
     public String getText() {
+        if(text==null) return "";
         return text;
     }
 
@@ -43,16 +46,22 @@ public class Note implements Comparable<Note> {
 
     public long getId() { return id; }
 
+    public void setId(Long id) { this.id = id; }
+
     public String getUser_id() { return user_id; }
 
     public void setUser_id(String user_id) { this.user_id = user_id; }
 
-    public boolean equals(Note compared){
-        return this.id == compared.getId();
-    }
-
     @Override
     public int compareTo(Note n) {
         return this.date.compareTo(n.date);
+    }
+
+    public void setDelete(boolean delete) {
+        this.delete = delete;
+    }
+
+    public boolean isDelete() {
+        return delete;
     }
 }
