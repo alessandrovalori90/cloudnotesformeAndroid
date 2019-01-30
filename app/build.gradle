@@ -39,5 +39,8 @@ dependencies {
     implementation 'com.android.volley:volley:1.1.1'
     //gson
     implementation 'com.google.code.gson:gson:2.8.5'
+    //workmanager
+    def work_version = "1.0.0-beta01"
+    implementation "android.arch.work:work-runtime:$work_version"
 
 }

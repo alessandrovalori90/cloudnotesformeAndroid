@@ -124,15 +124,17 @@ public class NoteActivity extends AppCompatActivity {
         }
         @Override
         public void run() {
-            Log.d(TAG, "locked!");
-            global.lock();
+
             if(command.equals("DELETE")){
+                global.lock();
                 global.deleteLater(idExtra);
+                global.unlock();
             } else if(command.equals("UPDATE")){
+                global.lock();
                 global.update(note);
+                global.unlock();
             }
-            global.unlock();
-            Log.d(TAG, "unlocked!");
+
         }
     }
 }

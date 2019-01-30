@@ -4,6 +4,7 @@ import android.content.Context;
 import android.util.Log;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -12,8 +13,11 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Date;
 
 import it.sapienza.simplenotes.R;
+import it.sapienza.simplenotes.model.GsonUTCDateAdapter;
+import it.sapienza.simplenotes.model.Note;
 import it.sapienza.simplenotes.model.NotesAnswer;
 
 
@@ -21,7 +25,8 @@ public class HttpConn {
     private static final String TAG = "HttpConn";
 
     public static NotesAnswer syncList(Context context, String URL, String METHOD, String json) throws IOException {
-        Gson gson = new Gson();
+        Gson gson = new GsonBuilder().registerTypeAdapter(Date.class, new GsonUTCDateAdapter()).create();
+        //Gson gson = new Gson();
         URL url;
         NotesAnswer answer;
         Log.d(TAG, "syncList body: "+json);
@@ -47,7 +52,10 @@ public class HttpConn {
         }
         //create object from server responce
         Log.d(TAG, "syncList answer: " +output.toString());
+
         answer = gson.fromJson(output.toString(),NotesAnswer.class);
+        Note[] tmp = answer.getNotes();
+
         reader.close();
         return answer;
     }

@@ -91,6 +91,7 @@ public class GlobalClass extends Application {
     public void lock() {
         try {
             semaphore.acquire();
+            Log.d(TAG, "locked!");
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -98,6 +99,7 @@ public class GlobalClass extends Application {
 
     public void unlock() {
         semaphore.release();
+        Log.d(TAG, "unlocked!");
     }
     //obsolete
     public synchronized boolean isModified() {

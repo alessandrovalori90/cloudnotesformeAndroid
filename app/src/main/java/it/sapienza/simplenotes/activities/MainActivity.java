@@ -61,6 +61,9 @@ public class MainActivity extends AppCompatActivity {
         newNote.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                //quando la nota è finita si ritorna a questa activity ma se ci sono ancora tentativi di riconessione rallentano
+                // l'aggiornamento dell'interfaccia dato che la coda è di un singolo thread
+                stopTimer();
                 Intent newIntent = new Intent(MainActivity.this, NoteActivity.class);
                 startActivity(newIntent);
             }
@@ -114,9 +117,8 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();
         Gson gson = new Gson();
         String tmp = gson.toJson(global.getList());
-        Log.d(TAG, "onResume: json test:"+tmp);
+        Log.d(TAG, "onResume: json list: "+tmp);
         RetrieveNotesRunnable runnable = new RetrieveNotesRunnable(recycler, this, global,facebooktoken.getUserId());
-        stopTimer(); //per evitare di avere il timer e l'executor che lanciano lo stesso runnable contemporaneamente dato che è inutile
         future = executor.submit(runnable);
     }
 
@@ -160,7 +162,8 @@ public class MainActivity extends AppCompatActivity {
         private String user_id;
 
         private static final String TAG = "RetrieveNotesRunnable";
-        private final String URL ="http://10.0.2.2:3000/"; //device is running on a VM so localhost is not recognized
+        //private final String URL ="http://10.0.2.2:3000/"; //device is running on a VM so localhost is not recognized
+        private final String URL ="https://powerful-hamlet-43118.herokuapp.com/"; //device is running on a VM so localhost is not recognized
 
         private RetrieveNotesRunnable(RecyclerView recycler, Context context, GlobalClass global, String user_id){
             this.recycler = recycler;
@@ -172,8 +175,9 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void run() {
             Gson gson = new Gson();
-            String tmp = gson.toJson(global.getList());
-            Log.d(TAG, "run: json test:"+tmp);
+            //String tmp = gson.toJson(global.getList());
+            //Log.d(TAG, "run: json test:"+tmp);ù
+            //for more reactive behaviour
             if(global.isFirst()) readDisk();
             recycler.post(new Runnable() {
                 @Override
@@ -183,9 +187,12 @@ public class MainActivity extends AppCompatActivity {
                     recycler.setLayoutManager(new LinearLayoutManager(context));
                 }
             });
+
             checkConnection();
             if(internet) cloud();
-            InternalStorage.writeNotesInternalStorage(global,context);
+            AccessToken accessToken = AccessToken.getCurrentAccessToken();
+            String id = accessToken.getUserId();
+            InternalStorage.writeNotesInternalStorage(global,context, id);
 
         }
         //checks open networks. These networks do not necessarely have internet connection.
@@ -197,9 +204,10 @@ public class MainActivity extends AppCompatActivity {
         }
         //dowloads notes from cloud
         private void cloud(){
-            global.lock();
             Gson gson = new Gson();
+            global.lock();
             String tmp = gson.toJson(global.getList());
+            global.unlock();
             String json;
             if(tmp==null || tmp.equals("null")) json = "{\"list\":[]}";
             else json = "{\"list\":"+tmp+"}";
@@ -212,14 +220,12 @@ public class MainActivity extends AppCompatActivity {
                 e.printStackTrace();
                 internet = false;
                 setTimer(context);
-                global.unlock();
                 return;
             }
             //update interface
             if(answer == null) {
                 internet = false;
                 setTimer(context);
-                global.unlock();
                 return;
             }
 
@@ -230,8 +236,9 @@ public class MainActivity extends AppCompatActivity {
                 return;
             }
             */
+            global.lock();
             global.setList(answer.getNotes());
-
+            global.unlock();
             recycler.post(new Runnable() {
                 @Override
                 public void run() {
@@ -243,7 +250,6 @@ public class MainActivity extends AppCompatActivity {
             deleteFlaggedFromInternal();
             internet = true;
             stopTimer();
-            global.unlock();
         }
         /*
         * Deletes notes flagged for delete fromt the internal storage
@@ -257,13 +263,19 @@ public class MainActivity extends AppCompatActivity {
                     deleted = true;
                 }
             }
-            if(deleted)
-                InternalStorage.readNotesInternalStorage(context);
+            if(deleted) {
+                AccessToken accessToken = AccessToken.getCurrentAccessToken();
+                String id = accessToken.getUserId();
+                InternalStorage.readNotesInternalStorage(context, id);
+            }
+
 
         }
         private void readDisk(){
             global.setFirst(false);
-            answer = InternalStorage.readNotesInternalStorage(context);
+            AccessToken accessToken = AccessToken.getCurrentAccessToken();
+            String id = accessToken.getUserId();
+            answer = InternalStorage.readNotesInternalStorage(context, id);
             if(answer ==null) return;
             global.setList(answer.getNotes());
         }

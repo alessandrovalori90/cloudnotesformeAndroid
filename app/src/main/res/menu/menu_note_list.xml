@@ -2,7 +2,7 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
         android:id="@+id/log_out"
-        android:title="Loug out" />
+        android:title="Log out" />
     <item
         android:id="@+id/delete_note"
         android:title="Delete note" />

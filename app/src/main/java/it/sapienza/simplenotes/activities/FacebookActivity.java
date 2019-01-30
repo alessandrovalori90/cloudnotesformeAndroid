@@ -51,6 +51,7 @@ public class FacebookActivity extends AppCompatActivity {
         //check if already logged in
         accessToken = AccessToken.getCurrentAccessToken();
         boolean isLoggedIn = accessToken != null && !accessToken.isExpired();
+        Log.d(TAG, "isloggedin: "+isLoggedIn);
         if(isLoggedIn){
             Intent newIntent = new Intent(FacebookActivity.this, MainActivity.class);
             newIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP); //cancels this activity and launches new one
@@ -105,7 +106,9 @@ public class FacebookActivity extends AppCompatActivity {
 
         @Override
         public void run() {
-            settings = InternalStorage.readSettingsInternalStorage(context);
+            accessToken = AccessToken.getCurrentAccessToken();
+            String id = accessToken.getUserId();
+            if(id!=null) settings = InternalStorage.readSettingsInternalStorage(context, id);
             if(settings!=null && settings.isRegistered())
                 global.setSettings(settings);
             else
@@ -123,11 +126,13 @@ public class FacebookActivity extends AppCompatActivity {
 
         private void registerUser(){
             GenericAnswer answer = null;
-            final String URL="http://10.0.2.2:3000/users";
+            //final String URL="http://10.0.2.2:3000/users";
+            final String URL="https://powerful-hamlet-43118.herokuapp.com/users";
             String json = "{\"id\":\""+user_id+"\"}";
 
             URL url;
             try {
+                Log.d(TAG, "registerUser1: ");
                 url = new URL(URL);
                 HttpURLConnection httpCon = (HttpURLConnection) url.openConnection();
                 httpCon.setDoOutput(true);
@@ -140,7 +145,7 @@ public class FacebookActivity extends AppCompatActivity {
                 out.write(json);
                 out.flush();
                 out.close();
-
+                Log.d(TAG, "registerUser2: ");
                 InputStream responce = httpCon.getInputStream();
                 BufferedReader reader = new BufferedReader(new InputStreamReader(responce));
                 StringBuilder output = new StringBuilder();
@@ -159,7 +164,9 @@ public class FacebookActivity extends AppCompatActivity {
                 settings = new Settings();
                 settings.setRegistered(true);
                 global.setSettings(settings);
-                InternalStorage.writeSettingsInternalStorage(global, context);
+                accessToken = AccessToken.getCurrentAccessToken();
+                String id = accessToken.getUserId();
+                if(id!=null) InternalStorage.writeSettingsInternalStorage(global, context, id);
             }
         }
     }
