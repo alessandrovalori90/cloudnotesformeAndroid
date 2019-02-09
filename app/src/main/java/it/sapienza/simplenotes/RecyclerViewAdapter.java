@@ -63,7 +63,7 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
                 else holder.preview.setText(note.getText());
             }
             if(note.getDate()!=null) {
-                DateFormat dateFormat = new SimpleDateFormat("yy-MM-dd HH:mm:ss");//should add country detection
+                DateFormat dateFormat = new SimpleDateFormat("HH:mm:ss dd-MM-yy");//should add country detection
                 holder.date.setText(dateFormat.format(note.getDate()));
             }
         }

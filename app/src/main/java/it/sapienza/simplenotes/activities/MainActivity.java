@@ -95,8 +95,10 @@ public class MainActivity extends AppCompatActivity {
             Intent newIntent = new Intent(MainActivity.this, FacebookActivity.class);
             startActivity(newIntent);
             return true;
+        } else if(id == R.id.Refresh) {
+            RetrieveNotesRunnable runnable = new RetrieveNotesRunnable(recycler, this, global,facebooktoken.getUserId());
+            future = executor.submit(runnable);
         }
-
         return super.onOptionsItemSelected(item);
     }
 

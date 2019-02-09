@@ -27,6 +27,8 @@ public class NoteActivity extends AppCompatActivity {
     private GlobalClass global;
     private AccessToken accessToken;
     private boolean deleted = false;
+    private String titleExtra;
+    private String textExtra;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,8 +45,8 @@ public class NoteActivity extends AppCompatActivity {
         getSupportActionBar().setDisplayShowHomeEnabled(true);
         accessToken = AccessToken.getCurrentAccessToken();
         //obtain information about the note
-        String titleExtra = getIntent().getStringExtra("title");
-        String textExtra = getIntent().getStringExtra("text");
+        titleExtra = getIntent().getStringExtra("title");
+        textExtra = getIntent().getStringExtra("text");
         long timeid = (int) new Date().getTime();
         timeid = -Math.abs(timeid); //make negative
         idExtra =getIntent().getLongExtra("id",timeid);
@@ -99,6 +101,8 @@ public class NoteActivity extends AppCompatActivity {
             UpdateRunnable delete = new UpdateRunnable("DELETE",null);
             Thread t1 = new Thread(delete);
             t1.start();
+            return;
+        } else if(title.getText().toString().equals(titleExtra) && text.getText().toString().equals(textExtra)){ //if note not changed do nothing
             return;
         }
         Note note = new Note(title.getText().toString(),text.getText().toString(),new Date(),idExtra,accessToken.getUserId());

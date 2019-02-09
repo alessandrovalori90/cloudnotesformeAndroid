@@ -54,7 +54,7 @@ public class Note implements Comparable<Note> {
 
     @Override
     public int compareTo(Note n) {
-        return this.date.compareTo(n.date);
+        return n.date.compareTo(this.date);
     }
 
     public void setDelete(boolean delete) {
