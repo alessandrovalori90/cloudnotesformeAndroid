@@ -24,10 +24,11 @@ public class InternalStorage {
     public static NotesAnswer readNotesInternalStorage(Context context, String id){
         FileInputStream fis;
         String line;
+        Log.d(TAG, "readDisk start: ");
         StringBuilder sb = new StringBuilder();
         NotesAnswer answer;
         try {
-            fis = context.openFileInput(context.getResources().getString(R.string.storage_notes_file_name));
+            fis = context.openFileInput(context.getResources().getString(R.string.storage_notes_file_name)+id);
             InputStreamReader isr = new InputStreamReader(fis);
             BufferedReader bufferedReader = new BufferedReader(isr);
             while ((line = bufferedReader.readLine()) != null) {

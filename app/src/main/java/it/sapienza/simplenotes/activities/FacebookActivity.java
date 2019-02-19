@@ -50,14 +50,6 @@ public class FacebookActivity extends AppCompatActivity {
         executor = Executors.newSingleThreadExecutor();
         //check if already logged in
         accessToken = AccessToken.getCurrentAccessToken();
-        boolean isLoggedIn = accessToken != null && !accessToken.isExpired();
-        Log.d(TAG, "isloggedin: "+isLoggedIn);
-        if(isLoggedIn){
-            Intent newIntent = new Intent(FacebookActivity.this, MainActivity.class);
-            newIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP); //cancels this activity and launches new one
-            startActivity(newIntent);
-            finish();
-        }
 
         // Callback registration
         loginButton.registerCallback(callbackManager, new FacebookCallback<LoginResult>() {
@@ -83,6 +75,15 @@ public class FacebookActivity extends AppCompatActivity {
                 Log.d(TAG, "onError: ");
             }
         });
+
+        boolean isLoggedIn = accessToken != null && !accessToken.isExpired();
+        Log.d(TAG, "isloggedin: "+isLoggedIn);
+        if(isLoggedIn){
+            Intent newIntent = new Intent(FacebookActivity.this, MainActivity.class);
+            newIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP); //cancels this activity and launches new one
+            startActivity(newIntent);
+            finish();
+        }
     }
 
     @Override

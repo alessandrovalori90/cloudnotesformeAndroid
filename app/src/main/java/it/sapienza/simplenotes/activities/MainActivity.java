@@ -54,7 +54,7 @@ public class MainActivity extends AppCompatActivity {
         global = (GlobalClass) getApplicationContext();
         //set Toolbar
         Toolbar toolbar = findViewById(R.id.toolbar);
-        toolbar.setTitle("Simple NotesAnswer");
+        toolbar.setTitle("Simple Notes");
         setSupportActionBar(toolbar);
         //set Floating button
         FloatingActionButton newNote = findViewById(R.id.newNote);
@@ -118,8 +118,6 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         Gson gson = new Gson();
-        String tmp = gson.toJson(global.getList());
-        Log.d(TAG, "onResume: json list: "+tmp);
         RetrieveNotesRunnable runnable = new RetrieveNotesRunnable(recycler, this, global,facebooktoken.getUserId());
         future = executor.submit(runnable);
     }

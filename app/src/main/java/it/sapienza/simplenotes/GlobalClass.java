@@ -36,10 +36,10 @@ public class GlobalClass extends Application {
 
         if(list!=null & serverList!=null){
             for(int i=0;i<serverList.length;i++) {
-                for(int j=0;i<list.length;j++) {
+                for(int j=0;j<list.length;j++) {
                     if ( Math.abs(list[j].getId()) == Math.abs(serverList[i].getId()) & list[j].compareTo(serverList[i])>0){ //absoulte value to compare ids because the id of new notes is negative.
                         serverList[i]=list[j];
-                    }-
+                    }
                 }
             }
         }
